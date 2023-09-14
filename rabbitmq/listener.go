@@ -4,8 +4,7 @@ import (
 	"log"
 
 	amqp "github.com/rabbitmq/amqp091-go"
-	"github.com/zeromicro/go-zero/core/logx"
-	"github.com/zeromicro/go-zero/core/queue"
+	"github.com/yunlongw/go-queue/queue"
 )
 
 type (
@@ -45,7 +44,7 @@ func (q RabbitListener) Start() {
 	for _, que := range q.queues.ListenerQueues {
 		err := q.consume(que)
 		if err != nil {
-			logx.Error(err)
+			log.Println(err)
 		}
 	}
 
@@ -69,13 +68,13 @@ func (q RabbitListener) consume(que ConsumerConf) error {
 
 	go func() {
 		for d := range msg {
-			logx.Debug("接受到數據", d.Body)
+
 			if handle, ok := q.handler[que.Name]; ok == true {
 				if err := handle.Consume(string(d.Body)); err != nil {
-					logx.Error("Error on consuming: %s, error: %v", string(d.Body), err)
+					log.Println("Error on consuming: %s, error: %v", string(d.Body), err)
 				}
 			} else {
-				logx.Error("消费者不存在，请检查配置")
+				log.Println("消费者不存在，请检查配置")
 			}
 		}
 	}()
