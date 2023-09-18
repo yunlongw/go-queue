@@ -73,6 +73,12 @@ func (q RabbitListener) consume(que ConsumerConf) error {
 			if handle, ok := q.handler[que.Name]; ok == true {
 				if err := handle.Consume(string(d.Body)); err != nil {
 					log.Println(fmt.Sprintf("Error on consuming: %s, error: %v", string(d.Body), err))
+				} else {
+					err := d.Ack(false)
+					if err != nil {
+						log.Println(err)
+						return
+					}
 				}
 			} else {
 				log.Println("消费者不存在，请检查配置")
