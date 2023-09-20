@@ -53,6 +53,8 @@ func (q RabbitListener) Start() {
 }
 
 func (q RabbitListener) consume(que ConsumerConf) error {
+	msgChan := make(chan amqp.Delivery, 100) // 创建带缓冲的通道
+
 	msg, err := q.channel.Consume(
 		que.Name,
 		"",
@@ -68,23 +70,22 @@ func (q RabbitListener) consume(que ConsumerConf) error {
 	}
 
 	go func() {
-		for d := range msg {
-
+		for d := range msgChan {
 			if handle, ok := q.handler[que.Name]; ok == true {
 				if err := handle.Consume(string(d.Body)); err != nil {
 					log.Println(fmt.Sprintf("Error on consuming: %s, error: %v", string(d.Body), err))
-				} else {
-					err := d.Ack(false)
-					if err != nil {
-						log.Println(err)
-						return
-					}
 				}
 			} else {
 				log.Println("消费者不存在，请检查配置")
 			}
+
+			d.Ack(false) // 手动确认消息处理完成
 		}
 	}()
+
+	for d := range msg {
+		msgChan <- d // 将消息发送到带缓冲的通道，非阻塞
+	}
 
 	return nil
 }
